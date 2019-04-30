@@ -17,6 +17,7 @@ using System.Net.Sockets;
 using System.IO;
 using System.Net;
 using System.Threading;
+using System.Drawing;
 
 namespace ReceiveWhatIsHappenningInAndroidApp
 {
@@ -56,25 +57,40 @@ namespace ReceiveWhatIsHappenningInAndroidApp
         }
         private void ClientConnection(Socket clientSocket, int clientID)
         {
-            byte[] Buffer = new byte[clientSocket.SendBufferSize];
             int readByte = 1;
             do
             {
                 try
                 {
+
+
+
+                    byte[] Buffer = new byte[clientSocket.SendBufferSize];
                     readByte = clientSocket.Receive(Buffer);
+                    richTextBox.Dispatcher.Invoke(new UpdateTextCallback(this.UpdateText), new object[] { "Number of characters in message: " + readByte.ToString() });
+
+                    byte[] readData = new byte[readByte];
+                    Array.Copy(Buffer, readData, readByte);
+
+
+                    MemoryStream memoryStream = new MemoryStream(readData);
+                    System.Drawing.Image image = System.Drawing.Image.FromStream(memoryStream);
+                    memoryStream.Seek(0, SeekOrigin.Begin);
+                    BitmapImage bitmapImage = new BitmapImage();
+                    bitmapImage.BeginInit();
+                    bitmapImage.StreamSource = memoryStream;
+                    bitmapImage.EndInit();
+                    ResponseImage.Source = bitmapImage;
+
+                    richTextBox.Dispatcher.Invoke(new UpdateTextCallback(this.UpdateText), new object[] { "From client numer " + clientID + "\n We got: " + System.Text.Encoding.UTF8.GetString(readData) });
+
                 }
                 catch (Exception e)
                 {
-
                     richTextBox.Dispatcher.Invoke(new UpdateTextCallback(this.UpdateText), new object[] { "Connection aborted. " + e.ToString() });
                 }
-                richTextBox.Dispatcher.Invoke(new UpdateTextCallback(this.UpdateText), new object[] { "Number of characters in message: " + readByte.ToString() });
-               
-                byte[] readData = new byte[readByte];
-                Array.Copy(Buffer, readData, readByte);
 
-                richTextBox.Dispatcher.Invoke(new UpdateTextCallback(this.UpdateText), new object[] { "From client numer " + clientID + "\n We got: " + System.Text.Encoding.UTF8.GetString(readData) });
+
                 //try
                 //{
                 //    clientSocket.Send(new byte[2] { 79, 75 });// O K
@@ -84,6 +100,7 @@ namespace ReceiveWhatIsHappenningInAndroidApp
                 //    richTextBox.Dispatcher.Invoke(new UpdateTextCallback(this.UpdateText), new object[] { "Connection aborted. " + e.ToString() });
 
                 //}
+
             } while (readByte > 0);
         }
 
